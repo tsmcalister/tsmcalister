@@ -1,3 +1,3 @@
 <p align="center">
-<img src="generator/out.gif" /> 
+<img src="https://github.com/tsmcalister/tsmcalister/raw/master/generator/out.gif" /> 
 </p>

@@ -1,4 +1,4 @@
-use gif::Encoder;
+use gif::{Encoder, Repeat, SetParameter};
 use hsl::HSL;
 use indicatif::{ProgressBar, ProgressStyle};
 use noise::{Fbm, NoiseFn};
@@ -81,6 +81,7 @@ fn main() {
     let color_map = &[0xFF, 0xFF, 0xFF, 0, 0, 0];
     let mut image = File::create("out.gif").unwrap();
     let mut encoder = Encoder::new(&mut image, MAX_X as u16, MAX_Y as u16, color_map).unwrap();
+    encoder.set(Repeat::Infinite).unwrap();
 
     let bar = ProgressBar::new(FRAMES as u64);
     bar.set_style(
