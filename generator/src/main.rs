@@ -1,14 +1,19 @@
 use gif::Encoder;
 use hsl::HSL;
+use indicatif::{ProgressBar, ProgressStyle};
 use noise::{Fbm, NoiseFn};
 use std::fs::File;
 
-const RADIUS: f64 = 0.05;
-const MAX_X: usize = 256;
-const MAX_Y: usize = 256;
+// TWEAKABLE PARAMETERS
+const RADIUS: f64 = 0.02;
+const MAX_X: usize = 512;
+const MAX_Y: usize = 512;
 const CHANNELS: usize = 4;
 const FRAMES: usize = 128;
 const SCALE: f64 = 0.5;
+
+const STYLE_TEMPLATE: &str = "[{elapsed_precise}] {bar:40.red/cyan} {pos:>7}/{len:7}";
+const PROGRESS_CHARS: &str = "=>=";
 
 /// returns a periodic 2d fbm noise loop (with domain warping) by tracing a 4d "circle"
 ///
@@ -20,17 +25,25 @@ fn get_noise_loop() -> Vec<Vec<u8>> {
 
     let delta_angle = 2. * std::f64::consts::PI / (FRAMES as f64);
 
+    let bar = ProgressBar::new(FRAMES as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template(STYLE_TEMPLATE)
+            .progress_chars(PROGRESS_CHARS),
+    );
+
     for t in 0..FRAMES {
+        bar.inc(1);
         for y in 0..MAX_Y {
             for x in 0..MAX_X {
                 let angle = delta_angle * (t as f64);
                 let z = RADIUS * angle.cos();
                 let w = RADIUS * angle.sin();
 
-                // warping based on https://www.iquilezles.org/www/articles/warp/warp.htm
                 let _x = (x as f64) / (MAX_X as f64) * SCALE;
                 let _y = (y as f64) / (MAX_Y as f64) * SCALE;
 
+                // warping based on https://www.iquilezles.org/www/articles/warp/warp.htm
                 let q_x = fbm.get([_x, _y, z, w]);
                 let q_y = fbm.get([_x, _y, z, w]);
                 let r_x = fbm.get([_x + 4.0 * q_x + 1.7, _y + 4.0 * q_y + 9.2, z, w]);
@@ -62,11 +75,23 @@ fn get_noise_loop() -> Vec<Vec<u8>> {
 }
 
 fn main() {
-    let color_map = &[0xFF, 0xFF, 0xFF, 0, 0, 0];
+    println!("Calculating noise loop...");
     let mut frames = get_noise_loop();
+
+    let color_map = &[0xFF, 0xFF, 0xFF, 0, 0, 0];
     let mut image = File::create("out.gif").unwrap();
     let mut encoder = Encoder::new(&mut image, MAX_X as u16, MAX_Y as u16, color_map).unwrap();
+
+    let bar = ProgressBar::new(FRAMES as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template(STYLE_TEMPLATE)
+            .progress_chars(PROGRESS_CHARS),
+    );
+
+    println!("Rendering frames...");
     for t in 0..FRAMES {
+        bar.inc(1);
         let frame = gif::Frame::from_rgba(MAX_X as u16, MAX_Y as u16, &mut *frames[t]);
         encoder.write_frame(&frame).unwrap();
     }
