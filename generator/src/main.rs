@@ -5,9 +5,9 @@ use noise::{Fbm, NoiseFn};
 use std::fs::File;
 
 // TWEAKABLE PARAMETERS
-const RADIUS: f64 = 0.02;
-const MAX_X: usize = 512;
-const MAX_Y: usize = 512;
+const RADIUS: f64 = 0.04;
+const MAX_X: usize = 640;
+const MAX_Y: usize = 480;
 const CHANNELS: usize = 4;
 const FRAMES: usize = 128;
 const SCALE: f64 = 0.5;
@@ -57,11 +57,14 @@ fn get_noise_loop() -> Vec<Vec<u8>> {
                 };
                 let (r, g, b) = cols_hsl.to_rgb();
 
-                // only draw inside the inscribed circle
-                if ((x as i64) - (MAX_X as i64) / 2).pow(2)
-                    + ((y as i64) - (MAX_Y as i64) / 2).pow(2)
-                    < ((MAX_X as i64) / 2).pow(2)
-                {
+                // only draw inside the drop shape
+                // https://mathworld.wolfram.com/PiriformCurve.html
+
+                const A: f64 = 1.;
+                const B: f64 = 5. / 2.;
+                let d_x = _x / SCALE / SCALE;
+                let d_y = -(_y / SCALE - 0.5) / SCALE * B * 1.4;
+                if A.powf(4.) * d_y.powf(2.) < B.powf(2.) * d_x.powf(3.) * (2. * A - d_x) {
                     vals[t][x * CHANNELS + y * CHANNELS * MAX_X + 0] = r;
                     vals[t][x * CHANNELS + y * CHANNELS * MAX_X + 1] = g;
                     vals[t][x * CHANNELS + y * CHANNELS * MAX_X + 2] = b;
