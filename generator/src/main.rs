@@ -5,12 +5,12 @@ use noise::{Fbm, NoiseFn};
 use std::fs::File;
 
 // TWEAKABLE PARAMETERS
-const RADIUS: f64 = 0.04;
+const RADIUS: f64 = 0.05;
 const MAX_X: usize = 640;
 const MAX_Y: usize = 480;
 const CHANNELS: usize = 4;
 const FRAMES: usize = 128;
-const SCALE: f64 = 0.5;
+const SCALE: f64 = 0.45;
 
 const STYLE_TEMPLATE: &str = "[{elapsed_precise}] {bar:40.red/cyan} {pos:>7}/{len:7}";
 const PROGRESS_CHARS: &str = "=>=";
@@ -40,8 +40,12 @@ fn get_noise_loop() -> Vec<Vec<u8>> {
                 let z = RADIUS * angle.cos();
                 let w = RADIUS * angle.sin();
 
-                let _x = (x as f64) / (MAX_X as f64) * SCALE;
-                let _y = (y as f64) / (MAX_Y as f64) * SCALE;
+                let _x = ((x as f64) / (MAX_X as f64) - 0.5) * SCALE;
+                // y axis is scaled to achieve a squeeze effect
+                let _y = ((y as f64) / (MAX_Y as f64) - 0.5) * SCALE
+                    / ((_x / SCALE + 0.55) * 2.)
+                        .powf((3 as f64).powf(0.5))
+                        .min(1.);
 
                 // warping based on https://www.iquilezles.org/www/articles/warp/warp.htm
                 let q_x = fbm.get([_x, _y, z, w]);
@@ -51,9 +55,9 @@ fn get_noise_loop() -> Vec<Vec<u8>> {
                 let val = fbm.get([_x + 4.0 * r_x, _y + 4.0 * r_y, z, w]);
 
                 let cols_hsl = HSL {
-                    h: val * 255.,
-                    s: 255.,
-                    l: 255.,
+                    h: (val * 256.) % 256.,
+                    s: 256.,
+                    l: 256., // l > 1. && s > 1. will force colour components to be either 255 or 0
                 };
                 let (r, g, b) = cols_hsl.to_rgb();
 
@@ -62,13 +66,14 @@ fn get_noise_loop() -> Vec<Vec<u8>> {
 
                 const A: f64 = 1.;
                 const B: f64 = 5. / 2.;
-                let d_x = _x / SCALE / SCALE;
-                let d_y = -(_y / SCALE - 0.5) / SCALE * B * 1.4;
-                if A.powf(4.) * d_y.powf(2.) < B.powf(2.) * d_x.powf(3.) * (2. * A - d_x) {
-                    vals[t][x * CHANNELS + y * CHANNELS * MAX_X + 0] = r;
-                    vals[t][x * CHANNELS + y * CHANNELS * MAX_X + 1] = g;
-                    vals[t][x * CHANNELS + y * CHANNELS * MAX_X + 2] = b;
-                    vals[t][x * CHANNELS + y * CHANNELS * MAX_X + 3] = 255;
+                let _x = (x as f64) / (MAX_X as f64) * 2.;
+                let _y = ((y as f64) / (MAX_Y as f64) - 0.5) * 2. * B * 1.3;
+                if A.powf(4.) * _y.powf(2.) < B.powf(2.) * _x.powf(3.) * (2. * A - _x) {
+                    let INDEX = x * CHANNELS + y * CHANNELS * MAX_X;
+                    vals[t][INDEX + 0] = r;
+                    vals[t][INDEX + 1] = g;
+                    vals[t][INDEX + 2] = b;
+                    vals[t][INDEX + 3] = 255;
                 }
             }
         }
