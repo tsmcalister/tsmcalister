@@ -2,7 +2,7 @@
  <tr>
   <td width=200>
 <b>&nbsp&nbsp&nbsp| \<br>
-&nbsp&nbsp |* *\ <br>
+&nbsp&nbsp | *\ <br>
 &nbsp_|*_* \__<br>
     (∩ ͡◍ ͜ʖ ͡◍)⊃━☆ﾟ. * ･ ｡ﾟ,</b><br><br><br><br>
   </td>
